@@ -50,25 +50,55 @@ cos_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
 title_to_index = pd.Series(df.index, index=df["title"])
 
 # 추천 함수 정의
-def recommend(title, top_n=5, genre_weight=0.1):
-
+def recommend(title, top_n=5, genre_weight=0.1, show_reason=True):
     idx = title_to_index[title]
     sim_scores = list(enumerate(cos_sim[idx]))
 
-    # 기준 예능의 서브장르 집합
     base_subgenres = set(df.iloc[idx]["subgenre"].split(', ')) if df.iloc[idx]["subgenre"] != "정보 없음" else set()
+    base_cast = set(df.iloc[idx]["cast"].split(', ')) if df.iloc[idx]["cast"] != "정보 없음" else set()
+    base_desc_keywords = set(df.iloc[idx]["features_nouns"].split())
 
     boosted_scores = []
+    reasons = []
+
     for i, score in sim_scores:
         if i == idx:
             continue
-        target_subgenres = set(df.iloc[i]["subgenre"].split(', ')) if df.iloc[i]["subgenre"] != "정보 없음" else set()
-        overlap = base_subgenres & target_subgenres
-        bonus = genre_weight * len(overlap)
-        boosted_scores.append((i, score + bonus))
 
-    boosted_scores = sorted(boosted_scores, key=lambda x: x[1], reverse=True)[:top_n]
-    return df.iloc[[i[0] for i in boosted_scores]][["title", "subgenre"]]
+        target_subgenres = set(df.iloc[i]["subgenre"].split(', ')) if df.iloc[i]["subgenre"] != "정보 없음" else set()
+        target_cast = set(df.iloc[i]["cast"].split(', ')) if df.iloc[i]["cast"] != "정보 없음" else set()
+        target_desc_keywords = set(df.iloc[i]["features_nouns"].split())
+
+        genre_overlap = base_subgenres & target_subgenres
+        cast_overlap = base_cast & target_cast
+        desc_overlap = base_desc_keywords & target_desc_keywords
+
+        bonus = genre_weight * len(genre_overlap)
+        boosted_scores.append((i, score + bonus))
+        reasons.append((genre_overlap, cast_overlap, desc_overlap))
+
+    top_items = sorted(zip(boosted_scores, reasons), key=lambda x: x[0][1], reverse=True)[:top_n]
+
+    results = []
+    for ((i, score), (genres, casts, desc)) in top_items:
+        result = {
+            "title": df.iloc[i]["title"],
+            "subgenre": df.iloc[i]["subgenre"],
+        }
+        if show_reason:
+            reason_str = ""
+            if genres:
+                reason_str += f"장르 겹침: {list(genres)} "
+            if casts:
+                reason_str += f"출연진 겹침: {list(casts)} "
+            if desc:
+                reason_str += f"설명 키워드 겹침: {list(desc)[:3]}"  # 너무 길면 상위 3개만
+            result["추천 근거"] = reason_str.strip()
+        results.append(result)
+
+    return pd.DataFrame(results)
+
+
 
 print(recommend("이혼숙려캠프", top_n=5))
 
