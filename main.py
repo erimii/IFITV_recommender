@@ -196,7 +196,7 @@ def hybrid_recommend_with_reason(title, top_n=5, alpha=0.7, genre_weight=0.1):
 reslult = hybrid_recommend_with_reason("이혼숙려캠프", top_n=5, alpha=0.7)
 
 
-# 장르/출연진 겹침 비율 비교
+# 장르/출연진/설명 키워드 겹침 비율 비교
 '''
 나는 SOLO
 이혼숙려캠프
