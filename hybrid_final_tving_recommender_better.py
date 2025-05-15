@@ -124,7 +124,6 @@ def hybrid_recommend(title, top_n=10, alpha=0.6, beta=0.3, gamma=0.1):
             "장르": df.iloc[i]["genre"],
             "서브장르": df.iloc[i]["subgenre"],
             "추천_근거": reason if reason else "유사도 기반 추천",
-            "가중치_비율": f"TF-IDF:{alpha} + KoBERT:{beta} + CTR:{gamma} + Boost:{boost_weight}",
             "최종_점수": final_scores[i]
         })
 
